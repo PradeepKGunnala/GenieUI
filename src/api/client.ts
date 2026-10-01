@@ -59,7 +59,7 @@ export const api = {
   budgets: () => request<BudgetOverview>(`${CP}/budgets/summary`),
   costs: () => request<CostSummary>(`${CP}/costs/summary`),
   memory: (q: string) => request<MemorySearch>(`${CP}/memory/search?${new URLSearchParams({ q })}`),
-  audit: (missionId?: string) => request<Page<AuditEvent>>(`${CP}/audit?${new URLSearchParams({ size: '50', ...(missionId ? { missionId } : {}) })}`),
+  audit: (missionId?: string, page = 0) => request<Page<AuditEvent>>(`${CP}/audit?${new URLSearchParams({ size: '50', page: String(page), ...(missionId ? { missionId } : {}) })}`),
   autonomy: () => request<Autonomy>(`${CP}/autonomy`),
   stop: () => request<EmergencyStop>(`${CP}/emergency-stop`),
   activateStop: (reason: string) => request<EmergencyStop>(`${CP}/emergency-stop/activate`, 'POST', { reason }),
