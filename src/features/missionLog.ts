@@ -3,6 +3,7 @@ import type { AuditEvent } from '../types';
 export type LogLevel = 'SUCCESS' | 'FAILURE' | 'WAITING' | 'PROGRESS';
 
 export function logLevel(event: AuditEvent): LogLevel {
+  if (event.eventType === 'TASK_QUEUED_FOR_CAPACITY') return 'WAITING';
   if (event.eventType === 'MISSION_COMPLETED') return 'PROGRESS';
   if (/(FAILED|FAILURE|BLOCKED|DENIED|REJECTED|CANCELLED|TIMEOUT|EXHAUSTED)/.test(event.eventType)) return 'FAILURE';
   if (/(COMPLETED|SUCCEEDED|APPROVED|GRANTED|CLEARED|RESUMED)/.test(event.eventType)) return 'SUCCESS';
