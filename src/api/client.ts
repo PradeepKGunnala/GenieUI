@@ -1,3 +1,4 @@
+import { correlationId } from './correlationId';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import type { Agent, AgentDetail, Approval, AuditEvent, Autonomy, BudgetOverview, ChangeEvent, CostSummary, EmergencyStop, Health, Me, MemorySearch, Mission, MissionDetail, Overview, Page, TaskGraph } from '../types';
 
@@ -26,7 +27,7 @@ export async function request<T>(path: string, method = 'GET', body?: unknown): 
     }
     return response.body ? JSON.parse(response.body) as T : undefined as T;
   }
-  const headers = new Headers({ 'X-Correlation-Id': `ui-${crypto.randomUUID()}` });
+  const headers = new Headers({ 'X-Correlation-Id': correlationId() });
   if (body !== undefined) headers.set('Content-Type', 'application/json');
   if (method !== 'GET') {
     const token = csrfToken();
@@ -49,8 +50,8 @@ export const api = {
   missions: (q = '') => request<Page<Mission>>(`${CP}/missions?${new URLSearchParams({ q, size: '50' })}`),
   mission: (id: string) => request<MissionDetail>(`${CP}/missions/${encodeURIComponent(id)}`),
   graph: (id: string) => request<TaskGraph>(`${CP}/missions/${encodeURIComponent(id)}/graph`),
-  createMission: (objective: string) => request<{ missionId: string }>('/api/v1/missions', 'POST', { objective, title: objective.slice(0, 100) }),
-  startMission: (id: string) => request<{ workflowId: string }>(`/api/v1/missions/${encodeURIComponent(id)}/start`, 'POST'),
+  createMission: (objective: string) => request<{ missionId: string }>(`${CP}/missions`, 'POST', { objective, title: objective.slice(0, 100) }),
+  startMission: (id: string) => request<{ workflowId: string }>(`${CP}/missions/${encodeURIComponent(id)}/start`, 'POST'),
   agents: () => request<Agent[]>(`${CP}/agents`),
   agent: (id: string) => request<AgentDetail>(`${CP}/agents/${encodeURIComponent(id)}`),
   setAgent: (id: string, enabled: boolean, reason: string) => request(`${CP}/agents/${encodeURIComponent(id)}/status`, 'POST', { enabled, reason }),
@@ -59,7 +60,7 @@ export const api = {
   budgets: () => request<BudgetOverview>(`${CP}/budgets/summary`),
   costs: () => request<CostSummary>(`${CP}/costs/summary`),
   memory: (q: string) => request<MemorySearch>(`${CP}/memory/search?${new URLSearchParams({ q })}`),
-  audit: (missionId?: string) => request<Page<AuditEvent>>(`${CP}/audit?${new URLSearchParams({ size: '50', ...(missionId ? { missionId } : {}) })}`),
+  audit: (missionId?: string, page = 0) => request<Page<AuditEvent>>(`${CP}/audit?${new URLSearchParams({ size: '50', page: String(page), ...(missionId ? { missionId } : {}) })}`),
   autonomy: () => request<Autonomy>(`${CP}/autonomy`),
   stop: () => request<EmergencyStop>(`${CP}/emergency-stop`),
   activateStop: (reason: string) => request<EmergencyStop>(`${CP}/emergency-stop/activate`, 'POST', { reason }),

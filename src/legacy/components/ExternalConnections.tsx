@@ -1,0 +1,29 @@
+'use client';
+import {useState} from 'react';
+import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
+import {api,API_BASE} from '@/lib/api';
+import type {AgentSummary} from '@/lib/types';
+export type ExternalConnection={id:string;name:string;status:string;credential_configured:boolean;last_health_check_at:string|null;configuration:{endpoint:string;authentication:string;agentIds:string[];checkedStatus:string;operation:string}};
+export function ExternalConnections(){
+ const client=useQueryClient();const [name,setName]=useState('');const [endpoint,setEndpoint]=useState('');const [auth,setAuth]=useState('NONE');const [header,setHeader]=useState('X-API-Key');const [credential,setCredential]=useState('');const [grants,setGrants]=useState<string[]>(['ceo-v1']);const [notice,setNotice]=useState('');const [rotation,setRotation]=useState('');const [rotateId,setRotateId]=useState<string|null>(null);
+ const list=useQuery<ExternalConnection[]>({queryKey:['external-connections'],queryFn:()=>api.get(`${API_BASE}/connections/external`)});
+ const agents=useQuery<AgentSummary[]>({queryKey:['agents'],queryFn:()=>api.get(`${API_BASE}/agents`)});
+ const mutation=useMutation({mutationFn:async ({action,id}:{action:string;id?:string})=>{
+   if(action==='create')return api.post(`${API_BASE}/connections/external`,{name,endpoint,authentication:auth,headerName:header,credential:auth==='NONE'?null:credential,agentIds:grants});
+   return api.post<{message?:string}>(`${API_BASE}/connections/external/${id}/${action}`,action==='rotate'?{credential:rotation}:undefined);
+ },onSuccess:(result,variables)=>{setCredential('');setRotation('');setRotateId(null);setNotice((result as {message?:string})?.message??(variables.action==='create'?'Connection saved. Test access before assigning it to a mission.':'Connection updated.'));client.invalidateQueries({queryKey:['external-connections']});}});
+ return <section className="card space-y-4"><h2 className="font-semibold">External services</h2><p className="text-sm text-slate-400">Add multiple HTTPS JSON endpoints and grant specific agents read access. Connections use the existing connector registry. Write actions, OAuth sign-in and arbitrary API operations need a supported adapter.</p>
+ {list.isError&&<p role="alert" className="text-red-300">Unable to load external services.</p>}{mutation.isError&&<p role="alert" className="text-red-300">{mutation.error.message}</p>}{notice&&<p role="status">{notice}</p>}
+ <form className="space-y-4" onSubmit={e=>{e.preventDefault();mutation.mutate({action:'create'});}}>
+ <label className="label">Service name<input className="input" required maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></label>
+ <label className="label">Read-only JSON endpoint<input type="url" className="input" required value={endpoint} onChange={e=>setEndpoint(e.target.value)} placeholder="https://api.example.com/status"/></label>
+ <p className="text-xs text-slate-400">The operator must allow the exact host in GENIE_TOOL_HTTP_DOMAINS. Private addresses, redirects and credentials in URLs are blocked. This version uses a fixed GET endpoint without query parameters.</p>
+ <label className="label">Authentication<select className="input" value={auth} onChange={e=>{setAuth(e.target.value);setCredential('');}}><option value="NONE">No credentials</option><option value="BEARER">Bearer token</option><option value="API_KEY">API key header</option></select></label>
+ {auth==='API_KEY'&&<label className="label">API key header<input className="input" required value={header} onChange={e=>setHeader(e.target.value)}/></label>}
+ {auth!=='NONE'&&<label className="label">Credential<input type="password" autoComplete="off" className="input" required value={credential} onChange={e=>setCredential(e.target.value)}/></label>}
+ <fieldset><legend className="label">Agents allowed to read this service</legend><div className="flex flex-wrap gap-3">{agents.data?.map(a=><label key={a.agentId} className="text-xs"><input type="checkbox" checked={grants.includes(a.agentId)} onChange={e=>setGrants(e.target.checked?[...grants,a.agentId]:grants.filter(id=>id!==a.agentId))}/> {a.displayName}</label>)}</div></fieldset>
+ <button className="btn btn-primary" disabled={mutation.isPending||!grants.length}>Add external service</button></form>
+ <div className="space-y-3">{list.data?.map(c=><article className="rounded-lg border border-line p-4" key={c.id}><h3 className="font-semibold">{c.name}</h3><p className="text-sm">{c.configuration.endpoint}</p><p className="text-xs text-slate-400">{c.status} · {c.configuration.checkedStatus} · {c.configuration.operation} · {c.configuration.authentication} · credential {c.credential_configured?'stored':'not required'}<br/>Agents: {c.configuration.agentIds.join(', ')} · Last check: {c.last_health_check_at??'Never'}</p><div className="mt-3 flex gap-3"><button className="btn" disabled={mutation.isPending||c.status!=='CONNECTED'} onClick={()=>mutation.mutate({action:'check',id:c.id})}>Test access</button><button className="btn" disabled={mutation.isPending||c.status!=='CONNECTED'} onClick={()=>mutation.mutate({action:'disconnect',id:c.id})}>Disconnect</button>{c.credential_configured&&<button className="btn" onClick={()=>setRotateId(c.id)}>Rotate credential</button>}</div></article>)}</div>
+ {rotateId&&<form className="space-y-3" onSubmit={e=>{e.preventDefault();mutation.mutate({action:'rotate',id:rotateId});}}><label className="label">Replacement credential<input className="input" type="password" autoComplete="off" required value={rotation} onChange={e=>setRotation(e.target.value)}/></label><button className="btn" disabled={mutation.isPending}>Save replacement</button><button className="btn" type="button" onClick={()=>{setRotateId(null);setRotation('');}}>Cancel</button></form>}
+ </section>;
+}
