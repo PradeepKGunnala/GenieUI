@@ -51,7 +51,7 @@ function Login({ onLogin, offline }: { onLogin: () => void; offline: boolean }) 
 }
 
 const navigation = [
-  { group: 'WORKSPACE', items: [['/', 'Overview', LayoutDashboard], ['/missions', 'Missions', GitBranch], ['/design', 'Design', Brain], ['/decisions', 'Decisions', ShieldCheck], ['/delivery', 'Delivery', GitBranch], ['/agents', 'Agents', Cpu], ['/connections', 'Connections', Wallet], ['/approvals', 'Approvals', ShieldCheck], ['/resources', 'Resources', Wallet], ['/audit', 'Audit trail', Activity]] },
+  { group: 'WORKSPACE', items: [['/', 'Overview', LayoutDashboard], ['/missions', 'Missions', GitBranch], ['/design', 'Design Room', Brain], ['/decisions', 'Decisions', ShieldCheck], ['/delivery', 'Delivery', GitBranch], ['/agents', 'Agents', Cpu], ['/connections', 'Connections', Wallet], ['/approvals', 'Approvals', ShieldCheck], ['/resources', 'Resources', Wallet], ['/audit', 'Audit trail', Activity]] },
   { group: 'INTELLIGENCE', items: [['/memory', 'Memory', Brain], ['/evaluation', 'Evaluation', Gauge], ['/models', 'Model updates', Brain]] },
   { group: 'VERTICALS', items: [['/trading', 'Trading', Radio], ['/personal', 'Personal & career', CircleHelp], ['/droneos', 'DroneOS', SquareTerminal]] },
   { group: 'SYSTEM', items: [['/system', 'System health', Settings2], ['/budgets', 'Budgets', Wallet], ['/costs', 'Costs', Wallet], ['/policies', 'Policies', ShieldCheck], ['/settings/autonomy', 'Autonomy', Settings2], ['/settings/emergency', 'Emergency', ShieldCheck]] },
