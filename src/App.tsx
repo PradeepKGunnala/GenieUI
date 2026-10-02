@@ -1,3 +1,18 @@
+import DetailedOverview from './legacy/app/dashboard/page';
+import MissionLedger from './legacy/app/missions/page';
+import ModelUpdates from './legacy/app/models/page';
+import Connections from './legacy/app/connections/page';
+import NewMission from './legacy/app/missions/new/page';
+import DetailedMission from './legacy/app/missions/[id]/page';
+import AgentRegistry from './legacy/app/agents/page';
+import AgentDetails from './legacy/app/agents/[id]/page';
+import Budgets from './legacy/app/budgets/page';
+import Costs from './legacy/app/costs/page';
+import Policies from './legacy/app/policies/page';
+import PolicyDetails from './legacy/app/policies/[id]/page';
+import AutonomySettings from './legacy/app/settings/autonomy/page';
+import EmergencySettings from './legacy/app/settings/emergency/page';
+import ApprovalDetails from './legacy/app/approvals/[id]/page';
 import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isTauri } from '@tauri-apps/api/core';
@@ -7,6 +22,7 @@ import { api, ApiError } from './api/client';
 import { ErrorNotice } from './components/Shared';
 import { useLiveEvents } from './events/useLiveEvents';
 import { useView } from './stores/view';
+import { Trading } from './features/Trading';
 import { Home } from './features/Home';
 import { Missions, MissionPage } from './features/Missions';
 import { Agents } from './features/Agents';
@@ -34,10 +50,10 @@ function Login({ onLogin, offline }: { onLogin: () => void; offline: boolean }) 
 }
 
 const navigation = [
-  { group: 'WORKSPACE', items: [['/', 'Overview', LayoutDashboard], ['/missions', 'Missions', GitBranch], ['/agents', 'Agents', Cpu], ['/approvals', 'Approvals', ShieldCheck], ['/resources', 'Resources', Wallet], ['/audit', 'Audit trail', Activity]] },
-  { group: 'INTELLIGENCE', items: [['/memory', 'Memory', Brain], ['/evaluation', 'Evaluation', Gauge]] },
+  { group: 'WORKSPACE', items: [['/', 'Overview', LayoutDashboard], ['/missions', 'Missions', GitBranch], ['/agents', 'Agents', Cpu], ['/connections', 'Connections', Wallet], ['/approvals', 'Approvals', ShieldCheck], ['/resources', 'Resources', Wallet], ['/audit', 'Audit trail', Activity]] },
+  { group: 'INTELLIGENCE', items: [['/memory', 'Memory', Brain], ['/evaluation', 'Evaluation', Gauge], ['/models', 'Model updates', Brain]] },
   { group: 'VERTICALS', items: [['/trading', 'Trading', Radio], ['/personal', 'Personal & career', CircleHelp], ['/droneos', 'DroneOS', SquareTerminal]] },
-  { group: 'SYSTEM', items: [['/system', 'System health', Settings2]] },
+  { group: 'SYSTEM', items: [['/system', 'System health', Settings2], ['/budgets', 'Budgets', Wallet], ['/costs', 'Costs', Wallet], ['/policies', 'Policies', ShieldCheck], ['/settings/autonomy', 'Autonomy', Settings2], ['/settings/emergency', 'Emergency', ShieldCheck]] },
 ] as const;
 
 function CommandDialog({ owner }: { owner: boolean }) {
@@ -54,7 +70,7 @@ function CommandDialog({ owner }: { owner: boolean }) {
   if (!open) return null;
   return <div className="dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}><div className="dialog" role="dialog" aria-modal="true" aria-label="Create mission">
     <div className="dialog-header"><span className="eyebrow">COMMAND MODE / NEW MISSION</span><button className="icon-button" aria-label="Close" onClick={() => setOpen(false)}><X size={18} /></button></div>
-    <h2>What should Genie accomplish?</h2><p>Your request goes through the backend mission planner and governance controls.</p>
+    <h2>What should Genie accomplish?</h2><p><NavLink to="/missions/new" onClick={()=>setOpen(false)}>Use the full mission form to select connections, add constraints or save a draft →</NavLink></p><p>Your request produces an agent report through the mission planner. For simulated futures execution, use the Trading page and its separate approval gates.</p>
     <form onSubmit={(event) => { event.preventDefault(); if (draft.trim()) create.mutate(); }}><textarea autoFocus placeholder="Describe the outcome you want..." value={draft} onChange={(event) => setDraft(event.target.value)} rows={4} maxLength={2000} required />
       <ErrorNotice error={create.error} /><div className="dialog-actions"><span>Owner authorization required</span><button className="primary" disabled={!owner || create.isPending || !draft.trim()} type="submit">{create.isPending ? 'Creating…' : 'Create mission'} <ArrowRight size={16} /></button></div></form>
   </div></div>;
@@ -84,15 +100,15 @@ function Shell({ user }: { user: Me }) {
       <nav aria-label="Main navigation">{navigation.map(({ group, items }) => <div className="nav-group" key={group}><span className="nav-label">{group}</span>{items.map(([path, label, Icon]) => <NavLink key={path} end={path === '/'} onClick={() => setMobileNav(false)} to={path} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}><Icon size={17} strokeWidth={1.8} /><span>{label}</span></NavLink>)}</div>)}</nav>
       <div className="sidebar-foot"><div className="connection"><span className={`dot ${connected ? 'online' : ''}`} />{connected ? 'Live connection' : 'Reconnecting · 10s refresh'}</div><div className="identity"><span className="avatar">{user.displayName.charAt(0).toUpperCase()}</span><span><strong>{user.displayName}</strong><small>{user.role.toLowerCase()}</small></span><button aria-label="Sign out" className="icon-button" onClick={() => logout.mutate()}><LockKeyhole size={16} /></button></div></div>
     </aside><div className="workspace"><header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle menu"><Menu size={20} /></button><span className="breadcrumb">GENIE <span>/</span> CONTROL PLANE</span><div className="top-actions"><span className={`top-status ${stop.data?.active ? 'danger' : ''}`}><span className={`dot ${stop.data?.active ? 'red' : connected ? 'online' : ''}`} />{stop.data?.active ? 'EMERGENCY STOP ACTIVE' : stop.isSuccess ? 'SYSTEM LIVE' : 'STATUS UNKNOWN'}</span><button className="command-trigger" onClick={() => setCommandOpen(true)}><Search size={16} /><span>Ask Genie or create a mission</span><kbd>⌘ K</kbd></button><NavLink to="/approvals" className="icon-button" aria-label="Approvals"><Bell size={18} /></NavLink></div></header>
-      <main className="content"><AppBoundary><Routes><Route path="/" element={<Home events={events} owner={user.role === 'OWNER'} />} /><Route path="/missions" element={<Missions />} /><Route path="/missions/:id" element={<MissionPage />} /><Route path="/agents" element={<Agents owner={user.role === 'OWNER'} />} /><Route path="/approvals" element={<Approvals owner={user.role === 'OWNER'} />} /><Route path="/resources" element={<Resources />} /><Route path="/memory" element={<Memory />} /><Route path="/audit" element={<Audit />} /><Route path="/system" element={<System owner={user.role === 'OWNER'} />} /><Route path="/evaluation" element={<Verticals name="Evaluation" />} /><Route path="/trading" element={<Verticals name="Trading" />} /><Route path="/personal" element={<Verticals name="Personal & career" />} /><Route path="/droneos" element={<Verticals name="DroneOS" />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></AppBoundary></main></div>
+      <main className="content"><AppBoundary><Routes><Route path="/" element={<Home events={events} owner={user.role === 'OWNER'} />} /><Route path="/missions" element={<Missions />} /><Route path="/dashboard" element={<DetailedOverview />} /><Route path="/missions/ledger" element={<MissionLedger />} /><Route path="/missions/new" element={<NewMission />} /><Route path="/missions/:id/controls" element={<DetailedMission />} /><Route path="/missions/:id" element={<MissionPage />} /><Route path="/agents/registry" element={<AgentRegistry />} /><Route path="/agents/:id" element={<AgentDetails />} /><Route path="/agents" element={<Agents owner={user.role === 'OWNER'} />} /><Route path="/approvals" element={<Approvals owner={user.role === 'OWNER'} />} /><Route path="/resources" element={<Resources />} /><Route path="/memory" element={<Memory />} /><Route path="/audit" element={<Audit />} /><Route path="/system" element={<System owner={user.role === 'OWNER'} />} /><Route path="/evaluation" element={<Verticals name="Evaluation" />} /><Route path="/trading" element={<Trading owner={user.role === 'OWNER'} />} /><Route path="/personal" element={<Verticals name="Personal & career" />} /><Route path="/droneos" element={<Verticals name="DroneOS" />} /><Route path="/connections" element={<Connections />} /><Route path="/models" element={<ModelUpdates />} /><Route path="/budgets" element={<Budgets />} /><Route path="/costs" element={<Costs />} /><Route path="/policies" element={<Policies />} /><Route path="/policies/:id" element={<PolicyDetails />} /><Route path="/settings/autonomy" element={<AutonomySettings />} /><Route path="/settings/emergency" element={<EmergencySettings />} /><Route path="/approvals/:id" element={<ApprovalDetails />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></AppBoundary></main></div>
     <CommandDialog owner={user.role === 'OWNER'} />
   </div>;
 }
 
 export default function App() {
   const client = useQueryClient();
-  const me = useQuery({ queryKey: ['me'], queryFn: api.me, retry: false, refetchInterval: false });
+  const me = useQuery({ queryKey: ['me'], queryFn: api.me, retry: false, refetchInterval: 30_000 });
   if (me.isPending) return <div className="boot"><span className="brand-mark">✦</span><p>Connecting to Genie…</p></div>;
-  if (me.error) return <Login offline={!(me.error instanceof ApiError) || me.error.status === 0} onLogin={() => void client.invalidateQueries({ queryKey: ['me'] })} />;
+  if (me.error) return <Login offline={!(me.error instanceof ApiError) || me.error.status === 0} onLogin={() => void client.resetQueries()} />;
   return <Shell user={me.data} />;
 }
