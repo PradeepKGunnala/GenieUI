@@ -4,7 +4,7 @@ import { isTauri } from '@tauri-apps/api/core';
 import { CP, parseChangeEvent } from '../api/client';
 import type { ChangeEvent } from '../types';
 
-const eventNames = ['CONNECTED', 'AUTONOMY_CHANGED', 'EMERGENCY_STOP_ACTIVATED', 'EMERGENCY_STOP_CLEARED'];
+const eventNames = ['CONNECTED', 'OPERATIONS_SUMMARY_CHANGED', 'WORKFLOW_CHANGED', 'INCIDENT_CHANGED', 'APPROVAL_CHANGED', 'AUTONOMY_CHANGED', 'EMERGENCY_STOP_ACTIVATED', 'EMERGENCY_STOP_CLEARED'];
 
 export function useLiveEvents(enabled: boolean) {
   const queryClient = useQueryClient();
