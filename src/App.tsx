@@ -7,6 +7,7 @@ import { api, ApiError } from './api/client';
 import { ErrorNotice } from './components/Shared';
 import { useLiveEvents } from './events/useLiveEvents';
 import { useView } from './stores/view';
+import { Trading } from './features/Trading';
 import { Home } from './features/Home';
 import { Missions, MissionPage } from './features/Missions';
 import { Agents } from './features/Agents';
@@ -54,7 +55,7 @@ function CommandDialog({ owner }: { owner: boolean }) {
   if (!open) return null;
   return <div className="dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}><div className="dialog" role="dialog" aria-modal="true" aria-label="Create mission">
     <div className="dialog-header"><span className="eyebrow">COMMAND MODE / NEW MISSION</span><button className="icon-button" aria-label="Close" onClick={() => setOpen(false)}><X size={18} /></button></div>
-    <h2>What should Genie accomplish?</h2><p>Your request goes through the backend mission planner and governance controls.</p>
+    <h2>What should Genie accomplish?</h2><p>Your request produces an agent report through the mission planner. For simulated futures execution, use the Trading page and its separate approval gates.</p>
     <form onSubmit={(event) => { event.preventDefault(); if (draft.trim()) create.mutate(); }}><textarea autoFocus placeholder="Describe the outcome you want..." value={draft} onChange={(event) => setDraft(event.target.value)} rows={4} maxLength={2000} required />
       <ErrorNotice error={create.error} /><div className="dialog-actions"><span>Owner authorization required</span><button className="primary" disabled={!owner || create.isPending || !draft.trim()} type="submit">{create.isPending ? 'Creating…' : 'Create mission'} <ArrowRight size={16} /></button></div></form>
   </div></div>;
@@ -84,15 +85,15 @@ function Shell({ user }: { user: Me }) {
       <nav aria-label="Main navigation">{navigation.map(({ group, items }) => <div className="nav-group" key={group}><span className="nav-label">{group}</span>{items.map(([path, label, Icon]) => <NavLink key={path} end={path === '/'} onClick={() => setMobileNav(false)} to={path} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}><Icon size={17} strokeWidth={1.8} /><span>{label}</span></NavLink>)}</div>)}</nav>
       <div className="sidebar-foot"><div className="connection"><span className={`dot ${connected ? 'online' : ''}`} />{connected ? 'Live connection' : 'Reconnecting · 10s refresh'}</div><div className="identity"><span className="avatar">{user.displayName.charAt(0).toUpperCase()}</span><span><strong>{user.displayName}</strong><small>{user.role.toLowerCase()}</small></span><button aria-label="Sign out" className="icon-button" onClick={() => logout.mutate()}><LockKeyhole size={16} /></button></div></div>
     </aside><div className="workspace"><header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle menu"><Menu size={20} /></button><span className="breadcrumb">GENIE <span>/</span> CONTROL PLANE</span><div className="top-actions"><span className={`top-status ${stop.data?.active ? 'danger' : ''}`}><span className={`dot ${stop.data?.active ? 'red' : connected ? 'online' : ''}`} />{stop.data?.active ? 'EMERGENCY STOP ACTIVE' : stop.isSuccess ? 'SYSTEM LIVE' : 'STATUS UNKNOWN'}</span><button className="command-trigger" onClick={() => setCommandOpen(true)}><Search size={16} /><span>Ask Genie or create a mission</span><kbd>⌘ K</kbd></button><NavLink to="/approvals" className="icon-button" aria-label="Approvals"><Bell size={18} /></NavLink></div></header>
-      <main className="content"><AppBoundary><Routes><Route path="/" element={<Home events={events} owner={user.role === 'OWNER'} />} /><Route path="/missions" element={<Missions />} /><Route path="/missions/:id" element={<MissionPage />} /><Route path="/agents" element={<Agents owner={user.role === 'OWNER'} />} /><Route path="/approvals" element={<Approvals owner={user.role === 'OWNER'} />} /><Route path="/resources" element={<Resources />} /><Route path="/memory" element={<Memory />} /><Route path="/audit" element={<Audit />} /><Route path="/system" element={<System owner={user.role === 'OWNER'} />} /><Route path="/evaluation" element={<Verticals name="Evaluation" />} /><Route path="/trading" element={<Verticals name="Trading" />} /><Route path="/personal" element={<Verticals name="Personal & career" />} /><Route path="/droneos" element={<Verticals name="DroneOS" />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></AppBoundary></main></div>
+      <main className="content"><AppBoundary><Routes><Route path="/" element={<Home events={events} owner={user.role === 'OWNER'} />} /><Route path="/missions" element={<Missions />} /><Route path="/missions/:id" element={<MissionPage />} /><Route path="/agents" element={<Agents owner={user.role === 'OWNER'} />} /><Route path="/approvals" element={<Approvals owner={user.role === 'OWNER'} />} /><Route path="/resources" element={<Resources />} /><Route path="/memory" element={<Memory />} /><Route path="/audit" element={<Audit />} /><Route path="/system" element={<System owner={user.role === 'OWNER'} />} /><Route path="/evaluation" element={<Verticals name="Evaluation" />} /><Route path="/trading" element={<Trading owner={user.role === 'OWNER'} />} /><Route path="/personal" element={<Verticals name="Personal & career" />} /><Route path="/droneos" element={<Verticals name="DroneOS" />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></AppBoundary></main></div>
     <CommandDialog owner={user.role === 'OWNER'} />
   </div>;
 }
 
 export default function App() {
   const client = useQueryClient();
-  const me = useQuery({ queryKey: ['me'], queryFn: api.me, retry: false, refetchInterval: false });
+  const me = useQuery({ queryKey: ['me'], queryFn: api.me, retry: false, refetchInterval: 30_000 });
   if (me.isPending) return <div className="boot"><span className="brand-mark">✦</span><p>Connecting to Genie…</p></div>;
-  if (me.error) return <Login offline={!(me.error instanceof ApiError) || me.error.status === 0} onLogin={() => void client.invalidateQueries({ queryKey: ['me'] })} />;
+  if (me.error) return <Login offline={!(me.error instanceof ApiError) || me.error.status === 0} onLogin={() => void client.resetQueries()} />;
   return <Shell user={me.data} />;
 }

@@ -16,9 +16,9 @@ export type Mission = {
 export type Task = {
   taskId: string; title: string; objective: string | null; status: string;
   priority: string; requiredCapability: string; assignedAgentId: string | null;
-  retryCount: number; result: string | null; failureReason: string | null;
+  waitingReason?: string | null; retryCount: number; result: string | null; failureReason: string | null;
 };
-export type MissionDetail = Mission & { objective: string | null; finalResult: string | null; failureReason: string | null; tasks: Task[] };
+export type MissionDetail = Mission & { recoveryReason?: string | null; nextRecoveryAt?: string | null; recoveryAttempts?: number; updatedAt: string | null; objective: string | null; finalResult: string | null; failureReason: string | null; tasks: Task[] };
 export type TaskGraph = {
   nodes: { taskId: string; title: string; status: string; assignedAgentId: string | null; capability: string; priority: string }[];
   edges: { sourceTaskId: string; targetTaskId: string; dependencyType: string }[];
