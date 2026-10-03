@@ -80,3 +80,11 @@ Limits: personal/evaluation/DroneOS placeholders remain visible; generic connect
 OAuth are not implemented; trading remains paper-only with explicit owner approval. Production
 builds currently warn about a large main bundle. Tauri packaging of the added detailed screens
 has not been validated in this change.
+
+### Design-to-delivery foundation
+
+New sidebar pages: **Design**, **Decisions**, and **Delivery**. Record a discussion, submit a structured proposal with evidence requirements, review it as Owner, or revise a draft. These pages use the shared authenticated browser/Tauri client and ten-second backend polling. Existing mission, organization, connections and trading pages remain available.
+
+The backend's durable owner gate must be enabled before an owner action can resolve a candidate. External implementation is not enabled: accepted proposals pause at `PAUSED_ADAPTERS_REQUIRED`. GitHub artifacts, coding providers, acceptance evidence and merge approvals are later delivery slices; this UI does not imply those capabilities exist.
+
+The Design Room layout now follows the supplied Layer 2 diagram: discussion history beside an owner discussion and candidate workspace, shared Design Room/Decisions/Delivery/Approvals navigation, and a ten-stage delivery view with decision/workflow traceability. Stages show actual backend state; unimplemented integrations are explicitly identified. This is the initial UI shell, not a claim that AI conversation or the complete delivery pipeline is operational.
